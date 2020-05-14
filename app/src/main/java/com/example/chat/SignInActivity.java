@@ -58,7 +58,7 @@ public class SignInActivity extends AppCompatActivity {
 
 
         if (auth.getCurrentUser() != null) {
-            startActivity(new Intent(SignInActivity.this, MainActivity.class));
+            startActivity(new Intent(SignInActivity.this, ChatActivity.class));
         }
 
 
@@ -80,7 +80,10 @@ public class SignInActivity extends AppCompatActivity {
                                     // Sign in success, update UI with the signed-in user's information
                                     Log.d(TAG, "signInWithEmail:success");
                                     FirebaseUser user = auth.getCurrentUser();
-                                    startActivity(new Intent(SignInActivity.this, MainActivity.class));
+                                    Intent intent = new Intent(SignInActivity.this, ChatActivity.class);
+                                    intent.putExtra("userName",nameEditText.getText().toString().trim() );
+                                    startActivity(intent);
+
                                     // updateUI(user);
                                 } else {
                                     // If sign in fails, display a message to the user.
@@ -116,9 +119,9 @@ public class SignInActivity extends AppCompatActivity {
                                     Log.d(TAG, "createUserWithEmail:success");
                                     FirebaseUser user = auth.getCurrentUser();
                                     createUser(user);
-
-
-                                    startActivity(new Intent(SignInActivity.this, MainActivity.class));
+                                    Intent intent = new Intent(SignInActivity.this, ChatActivity.class);
+                                    intent.putExtra("userName",nameEditText.getText().toString().trim() );
+                                    startActivity(intent);
                                     // updateUI(user);
                                 } else {
                                     // If sign in fails, display a message to the user.

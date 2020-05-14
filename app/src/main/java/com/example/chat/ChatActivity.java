@@ -5,6 +5,7 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.InputFilter;
@@ -20,17 +21,23 @@ import android.widget.ListView;
 import android.widget.ProgressBar;
 
 
+import com.google.android.gms.tasks.Continuation;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity {
+public class ChatActivity extends AppCompatActivity {
 
     private ListView messageListView;
     private ChatMessageAdapter adapter;
@@ -40,25 +47,43 @@ public class MainActivity extends AppCompatActivity {
     private EditText messageEditText;
     private String userName;
 
+    private static final int RC_IMAGE_PICKER = 123;
+
     FirebaseDatabase database;
     DatabaseReference messagesDatabaseReference;
     ChildEventListener messagesChildEventListener;
+    DatabaseReference usersDatabaseReference;
+    ChildEventListener usersChildEventListener;
+
+    FirebaseStorage storage;
+    StorageReference chatImagesStorageReference;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_chat);
 
         database = FirebaseDatabase.getInstance();
-        messagesDatabaseReference = database.getReference().child("messages");
 
+
+        storage = FirebaseStorage.getInstance();
+        chatImagesStorageReference = storage.getReference().child("chat_images");
+
+        messagesDatabaseReference = database.getReference().child("messages");
+        usersDatabaseReference = database.getReference().child("users");
 
         progressBar = findViewById(R.id.progressBar);
         sendImageButton = findViewById(R.id.sendPhotoButton);
         sendMessageButton = findViewById(R.id.sendMessageButton);
         messageEditText = findViewById(R.id.messageEditText);
+        Intent intent = getIntent();
+        if (intent != null) {
+            userName = intent.getStringExtra("userName");
+        } else {
+            userName = "Default User";
+        }
 
-        userName = "Default User";
+
         messageListView = findViewById(R.id.messageListView);
         List<ChatMessage> chatMessages = new ArrayList<>();
         adapter = new ChatMessageAdapter(this, R.layout.message_item, chatMessages);
@@ -108,9 +133,43 @@ public class MainActivity extends AppCompatActivity {
         sendImageButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
+                Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+                intent.setType("image/*");
+                intent.putExtra(Intent.EXTRA_LOCAL_ONLY, true);
+                startActivityForResult(Intent.createChooser(intent, "Choose an image"), RC_IMAGE_PICKER);
             }
         });
+
+        usersChildEventListener = new ChildEventListener() {
+            @Override
+            public void onChildAdded(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+                User user = dataSnapshot.getValue(User.class);
+                if (user.getId().equals(FirebaseAuth.getInstance().getCurrentUser().getUid())) {
+                    userName = user.getName();
+                }
+            }
+
+            @Override
+            public void onChildChanged(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+
+            }
+
+            @Override
+            public void onChildRemoved(@NonNull DataSnapshot dataSnapshot) {
+
+            }
+
+            @Override
+            public void onChildMoved(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        };
+        usersDatabaseReference.addChildEventListener(usersChildEventListener);
 
         messagesChildEventListener = new ChildEventListener() {
             @Override
@@ -153,14 +212,56 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        switch (item.getItemId()){
+        switch (item.getItemId()) {
             case R.id.sign_out:
                 FirebaseAuth.getInstance().signOut();
-                startActivity(new Intent(MainActivity.this, SignInActivity.class));
+                startActivity(new Intent(ChatActivity.this, SignInActivity.class));
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
 
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode ==RC_IMAGE_PICKER && resultCode == RESULT_OK){
+            Uri selectedImageUri = data.getData();
+            final StorageReference imageReference = chatImagesStorageReference.child(selectedImageUri.getLastPathSegment());
+
+            UploadTask uploadTask = imageReference.putFile(selectedImageUri);
+
+
+            uploadTask = imageReference.putFile(selectedImageUri);
+
+            Task<Uri> urlTask = uploadTask.continueWithTask(new Continuation<UploadTask.TaskSnapshot, Task<Uri>>() {
+                @Override
+                public Task<Uri> then(@NonNull Task<UploadTask.TaskSnapshot> task) throws Exception {
+                    if (!task.isSuccessful()) {
+                        throw task.getException();
+                    }
+
+                    // Continue with the task to get the download URL
+                    return imageReference.getDownloadUrl();
+                }
+            }).addOnCompleteListener(new OnCompleteListener<Uri>() {
+                @Override
+                public void onComplete(@NonNull Task<Uri> task) {
+                    if (task.isSuccessful()) {
+                        Uri downloadUri = task.getResult();
+                        ChatMessage message = new ChatMessage();
+                        message.setImageUrl(downloadUri.toString());
+                        message.setName(userName);
+                        messagesDatabaseReference.push().setValue(message);
+
+                    } else {
+                        // Handle failures
+                        // ...
+                    }
+                }
+            });
+
+        }
     }
 }
