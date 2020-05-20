@@ -47,21 +47,34 @@ public class ChatActivity extends AppCompatActivity {
     private EditText messageEditText;
     private String userName;
 
+    private String recipientUserId;
+
     private static final int RC_IMAGE_PICKER = 123;
 
-    FirebaseDatabase database;
-    DatabaseReference messagesDatabaseReference;
-    ChildEventListener messagesChildEventListener;
-    DatabaseReference usersDatabaseReference;
-    ChildEventListener usersChildEventListener;
 
-    FirebaseStorage storage;
-    StorageReference chatImagesStorageReference;
+    private FirebaseAuth auth;
+    private FirebaseDatabase database;
+    private DatabaseReference messagesDatabaseReference;
+    private ChildEventListener messagesChildEventListener;
+    private DatabaseReference usersDatabaseReference;
+    private ChildEventListener usersChildEventListener;
+
+    private FirebaseStorage storage;
+    private StorageReference chatImagesStorageReference;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_chat);
+        auth = FirebaseAuth.getInstance();
+        Intent intent = getIntent();
+        if (intent != null) {
+            userName = intent.getStringExtra("userName");
+            recipientUserId = intent.getStringExtra("recipientUserId");
+        } else {
+            userName = "Default User";
+        }
+
 
         database = FirebaseDatabase.getInstance();
 
@@ -76,12 +89,6 @@ public class ChatActivity extends AppCompatActivity {
         sendImageButton = findViewById(R.id.sendPhotoButton);
         sendMessageButton = findViewById(R.id.sendMessageButton);
         messageEditText = findViewById(R.id.messageEditText);
-        Intent intent = getIntent();
-        if (intent != null) {
-            userName = intent.getStringExtra("userName");
-        } else {
-            userName = "Default User";
-        }
 
 
         messageListView = findViewById(R.id.messageListView);
@@ -122,6 +129,8 @@ public class ChatActivity extends AppCompatActivity {
                 ChatMessage message = new ChatMessage();
                 message.setText(messageEditText.getText().toString());
                 message.setName(userName);
+                message.setSender(auth.getCurrentUser().getUid());
+                message.setRecipient(recipientUserId);
                 message.setImageUrl(null);
 
                 messagesDatabaseReference.push().setValue(message);
@@ -175,8 +184,10 @@ public class ChatActivity extends AppCompatActivity {
             @Override
             public void onChildAdded(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
                 ChatMessage message = dataSnapshot.getValue(ChatMessage.class);
+                if (message.getSender().equals(auth.getCurrentUser().getUid()) && message.getRecipient().equals(recipientUserId)) {
+                    adapter.add(message);
+                }
 
-                adapter.add(message);
             }
 
             @Override
@@ -226,7 +237,7 @@ public class ChatActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode ==RC_IMAGE_PICKER && resultCode == RESULT_OK){
+        if (requestCode == RC_IMAGE_PICKER && resultCode == RESULT_OK) {
             Uri selectedImageUri = data.getData();
             final StorageReference imageReference = chatImagesStorageReference.child(selectedImageUri.getLastPathSegment());
 
