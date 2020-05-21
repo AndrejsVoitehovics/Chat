@@ -6,13 +6,15 @@ public class ChatMessage {
     private String sender;
     private String recipient;
     private String imageUrl;
+    private boolean isMine;
 
-    public ChatMessage(String text, String name, String sender, String recipient, String imageUrl) {
+    public ChatMessage(String text, String name, String sender, String recipient, String imageUrl, boolean isMine) {
         this.text = text;
         this.name = name;
         this.sender = sender;
         this.recipient = recipient;
         this.imageUrl = imageUrl;
+        this.isMine = isMine;
     }
 
     public String getSender() {
@@ -62,5 +64,13 @@ public class ChatMessage {
     }
 
     public ChatMessage() {
+    }
+
+    public boolean isMine() {
+        return isMine;
+    }
+
+    public void setMine(boolean mine) {
+        isMine = mine;
     }
 }

@@ -3,6 +3,7 @@ package com.example.chat;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -100,6 +101,7 @@ public class UserListActivity extends AppCompatActivity {
     private void buildRecycleView() {
         userRecycleView = findViewById(R.id.userListRecycleView);
         userRecycleView.setHasFixedSize(true);
+        userRecycleView.addItemDecoration(new DividerItemDecoration(userRecycleView.getContext(), DividerItemDecoration.VERTICAL));
         userLayoutManager = new LinearLayoutManager(this);
         userAdapter = new UserAdapter(userArrayList);
 

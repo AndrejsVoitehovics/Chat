@@ -185,7 +185,13 @@ public class ChatActivity extends AppCompatActivity {
             public void onChildAdded(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
                 ChatMessage message = dataSnapshot.getValue(ChatMessage.class);
                 if (message.getSender().equals(auth.getCurrentUser().getUid()) && message.getRecipient().equals(recipientUserId)) {
+                    message.setMine(true);
                     adapter.add(message);
+
+                } else if (message.getRecipient().equals(auth.getCurrentUser().getUid()) && message.getSender().equals(recipientUserId)) {
+                    message.setMine(false);
+                    adapter.add(message);
+
                 }
 
             }
@@ -264,6 +270,8 @@ public class ChatActivity extends AppCompatActivity {
                         ChatMessage message = new ChatMessage();
                         message.setImageUrl(downloadUri.toString());
                         message.setName(userName);
+                        message.setSender(auth.getCurrentUser().getUid());
+                        message.setRecipient(recipientUserId);
                         messagesDatabaseReference.push().setValue(message);
 
                     } else {
