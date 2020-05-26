@@ -37,30 +37,32 @@ public class ChatMessageAdapter extends ArrayAdapter<ChatMessage> {
         int layoutResource = 0;
         int viewType = getItemViewType(position);
 
-
-        if (convertView == null) {
-            convertView = ((Activity) getContext()).getLayoutInflater().inflate(R.layout.message_item, parent, false);
-        }
-
-        ImageView photoImageView = convertView.findViewById(R.id.photoImageView);
-        TextView textTextView = convertView.findViewById(R.id.textTextView);
-        TextView nameTextView = convertView.findViewById(R.id.nameTextView);
-
-        ChatMessage message = getItem(position);
-
-        boolean isText = message.getImageUrl() == null;
-
-        if (isText) {
-            textTextView.setVisibility(View.VISIBLE);
-            photoImageView.setVisibility(View.GONE);
-            textTextView.setText(message.getText());
+        if (viewType == 0) {
+            layoutResource = R.layout.my_message_item;
         } else {
-            textTextView.setVisibility(View.GONE);
-            photoImageView.setVisibility(View.VISIBLE);
-            Glide.with(photoImageView.getContext()).load(message.getImageUrl()).into(photoImageView);
+            layoutResource = R.layout.your_message_item;
         }
 
-        nameTextView.setText(message.getName());
+        if (convertView != null) {
+            viewHolder = (ViewHolder) convertView.getTag();
+        } else {
+            convertView = layoutInflater.inflate(layoutResource, parent, false);
+            viewHolder = new ViewHolder(convertView);
+            convertView.setTag(viewHolder);
+        }
+
+        boolean isText = chatMessage.getImageUrl() == null;
+        if (isText) {
+            viewHolder.messageTextView.setVisibility(View.VISIBLE);
+            viewHolder.photoImageView.setVisibility(View.GONE);
+            viewHolder.messageTextView.setText(chatMessage.getText());
+            viewHolder.nameTextView.setText(chatMessage.getName());
+        } else {
+           viewHolder.nameTextView.setText(chatMessage.getName());
+            viewHolder.messageTextView.setVisibility(View.GONE);
+            viewHolder.photoImageView.setVisibility(View.VISIBLE);
+            Glide.with(viewHolder.photoImageView.getContext()).load(chatMessage.getImageUrl()).into(viewHolder.photoImageView);
+        }
 
         return convertView;
     }
@@ -85,10 +87,12 @@ public class ChatMessageAdapter extends ArrayAdapter<ChatMessage> {
     private class ViewHolder {
         private TextView messageTextView;
         private ImageView photoImageView;
+        private TextView nameTextView;
 
         public ViewHolder(View view) {
             photoImageView = view.findViewById(R.id.photoImageView);
             messageTextView = view.findViewById(R.id.messageTextView);
+            nameTextView = view.findViewById(R.id.nameTextView);
         }
     }
 

@@ -46,6 +46,8 @@ public class ChatActivity extends AppCompatActivity {
     private Button sendMessageButton;
     private EditText messageEditText;
     private String userName;
+    private String recipientUserName ;
+
 
     private String recipientUserId;
 
@@ -66,15 +68,16 @@ public class ChatActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_chat);
+
         auth = FirebaseAuth.getInstance();
         Intent intent = getIntent();
         if (intent != null) {
             userName = intent.getStringExtra("userName");
             recipientUserId = intent.getStringExtra("recipientUserId");
-        } else {
-            userName = "Default User";
+            recipientUserName = intent.getStringExtra("recipientUserName");
         }
 
+        setTitle("Chat with "+ recipientUserName);
 
         database = FirebaseDatabase.getInstance();
 
